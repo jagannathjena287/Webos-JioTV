@@ -1,132 +1,105 @@
-# JTV for LG webOS — JioTV Live TV App for LG Smart TVs
+# Vistaar — JioTV for LG webOS
 
-**JTV for LG webOS** is an unofficial, community-built JioTV app for compatible LG webOS Smart TVs. It provides TV-friendly remote navigation, Jio account sign-in, live channel playback, and language filters for Bengali, Hindi, and English. The project includes instructions for installing a webOS `.ipk` package through Developer Mode.
+A modern JioTV client for LG Smart TVs running webOS, featuring the **Vistaar** design system — a sleek, near-black glass UI optimized for 1920×1080 TV displays and remote control navigation.
 
-> **Compatibility and access:** Playback depends on your Jio account and subscription, Jio's current service responses, and the TV's media/DRM support. This project is not affiliated with or endorsed by Jio or LG, and it does not bypass subscription or DRM checks.
+![webOS](https://img.shields.io/badge/webOS-TV-blue)
+![Version](https://img.shields.io/badge/version-0.3.18-green)
 
-## Project overview
+## ✨ Features
 
-This repository contains the JTV webOS application and its on-TV JavaScript service. It is intended for people exploring JioTV on LG webOS televisions and developers testing webOS apps.
+- **Vistaar UI** — Premium dark glass design with ambient gradient backdrop, floating nav pill, hero showcase, and smooth focus animations
+- **Live TV Streaming** — Stream 800+ Jio channels via HLS/DASH with Shaka Player
+- **3-Column Live TV** — Categories sidebar, channel grid, and live preview panel
+- **Programme Guide** — Full schedule browser with timeline slots
+- **Search** — On-screen QWERTY keyboard for TV remote navigation
+- **Channel Tune** — Type channel numbers directly with the remote numpad
+- **Favourites & Recents** — Bookmark channels and track watch history
+- **OTP Sign-In** — Authenticate with your Jio mobile number directly on TV
+- **Browser Preview** — Full simulation mode with demo channels for desktop testing
 
-## Privacy
+## 📸 Screenshots
 
-This source tree contains no account credentials, OTPs, access tokens, device addresses, TV pairing keys, or generated installation packages. The app asks for Jio sign-in details only on the TV and stores any resulting session locally on that TV. Those runtime values are not source-controlled.
+| Home | Live TV | Search |
+|------|---------|--------|
+| Hero showcase with channel rows | 3-column layout with preview | On-screen keyboard with results |
 
-## Features
+## 🛠️ Build & Install
 
-- Jio account sign-in from the TV with a one-time password.
-- Bengali as the default language filter, with Hindi and English filters.
-- Selecting the active category again clears only that category while retaining the selected language.
-- Remote-friendly navigation, direct channel-ID tuning, and a centered channel-ID overlay.
-- Best-quality-first HLS playback with step-down on sustained buffering and gradual recovery after stable playback.
-- DASH playback when supported by the TV, with a same-channel HLS retry when appropriate.
+### Prerequisites
 
-## Build
+- [webOS SDK CLI](https://webostv.developer.lge.com/develop/tools/cli-installation) (`ares-*` tools)
+- Node.js 18+
+- LG webOS TV with Developer Mode enabled
 
-Use the LG webOS CLI to package the app and service together:
+### Build the IPK
 
-```sh
-ares-package . service/com.codex.jtvwebos.service --outdir dist
+```bash
+cd jiotv-lg-webos
+ares-package -e "sample.mp4" . service/com.codex.jtvwebos.service -o dist
 ```
 
-Install the resulting IPK with `ares-install`, then launch `com.codex.jtvwebos`.
+### Install on TV
 
-## Install on an LG webOS TV (Developer Mode)
+```bash
+# Add your TV (first time only)
+ares-setup-device
 
-This is an unofficial sideloading workflow for personal testing. Use the generated webOS `.ipk` package; Android `.apk` files cannot be installed on LG webOS TVs.
+# Install
+ares-install dist/com.codex.jtvwebos_0.3.18_all.ipk -d <your-tv-name>
 
-### What you need
+# Launch
+ares-launch com.codex.jtvwebos -d <your-tv-name>
+```
 
-- An LG webOS TV and a computer on the same local network.
-- A free [LG webOS Developer account](https://webostv.developer.lge.com/).
-- A built `.ipk` package. This repository's build command above packages the app and service into `dist`; use the resulting IPK file.
+### Browser Testing
 
-### 1. Enable Developer Mode on the TV
+```bash
+ares-server -p 8080 .
+# Open http://localhost:8080 in your browser
+```
 
-1. Sign in or create an account at [LG webOS TV Developer](https://webostv.developer.lge.com/).
-2. On the TV, open the LG Content Store / Apps area, search for **Developer Mode**, install it, and launch it.
-3. Sign in with your LG Developer account.
-4. Switch **Dev Mode Status** on. The TV will reboot.
-5. After reboot, reopen Developer Mode and enable **Key Server**. Note the TV's IP address and the six-character passphrase shown on screen.
+In browser mode, 16 demo channels load automatically with a local sample video for testing playback, OSD controls, and the OTP sign-in flow (use OTP `123456`).
 
-**Screenshots from LG's Developer Mode documentation** (the exact layout may vary by TV/webOS version):
+## 🏗️ Architecture
 
-![LG Developer Mode login screen](https://res.cloudinary.com/dcsdn4mzr/image/upload/v1649914917/webOS-TV/images/docs/guides/Login_of_Dev_Mode_App_l87hq9.png)
+```
+├── index.html          # Vistaar UI layout (all screens)
+├── styles.css          # Vistaar design system (~1660 lines)
+├── app.js              # App logic, navigation, playback (~900 lines)
+├── appinfo.json        # webOS app metadata
+├── shaka-player.compiled.js  # HLS/DASH video player
+├── webOSTVjs-1.2.13/   # LG webOS TV JavaScript library
+└── service/
+    └── com.codex.jtvwebos.service/
+        ├── jio_service.js   # Jio API bridge (auth, channels, proxy)
+        ├── hls_utils.js     # HLS manifest utilities
+        ├── package.json
+        └── services.json
+```
 
-![LG Developer Mode status enabled](https://res.cloudinary.com/dcsdn4mzr/image/upload/v1649914915/webOS-TV/images/docs/guides/Dev_Mode_Status_On_qqzjd4.png)
+**On TV:** `app.js` → Luna Service Bus → `jio_service.js` → Jio API (`jiotvapi.media.jio.com`)
 
-![LG Developer Mode Key Server enabled](https://res.cloudinary.com/dcsdn4mzr/image/upload/v1649914918/webOS-TV/images/docs/guides/Key_Server_On_ql4tls.png)
+**In Browser:** `app.js` → Demo channels + local video (no Jio API needed)
 
-> **Session expiry:** Developer Mode is time-limited. If the app provides **Remain Session**, keep it enabled and use **EXTEND** before the session expires. LG notes that disabling Developer Mode removes apps installed through that development session. Do not assume sideloaded apps are permanent.
+## 🎨 Design System
 
-### 2. Install with webOS Dev Manager (graphical option)
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--bg` | `#07080A` | Near-black ground |
+| `--accent` | `#5AA9FF` | Vistaar blue |
+| `--text` | `#F5F6F8` | Primary text |
+| `--live` | `#E5262F` | Live indicator red |
+| `--glass` | `rgba(22,25,31,0.65)` | Glass morphism panels |
 
-[webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop) is a community desktop app for connecting to a Developer Mode TV and installing IPK packages.
+Focus style: white-fill with scale transform and elevation shadow.
 
-1. Download the installer for your operating system from [webOS Dev Manager releases](https://github.com/webosbrew/dev-manager-desktop/releases/latest).
-2. Launch Dev Manager and add/connect to the TV using the IP address shown in Developer Mode. Follow the pairing flow and enter the current passphrase if prompted.
-3. Choose the app/package installation option and select the JTV webOS `.ipk` file.
-4. Wait for the install to finish, then open **JTV** from the TV launcher. If it does not appear immediately, return to the home screen and check again.
+## 📝 Credits
 
-**Example screenshots from the Dev Manager project:**
+- Original webOS service backend by [andromyth/jiotv-lg-webos](https://github.com/andromyth/jiotv-lg-webos)
+- UI inspired by [Vistaar](https://github.com/fortysev-en/vistaar) Android TV design
+- [Shaka Player](https://github.com/shaka-project/shaka-player) (Apache 2.0) for adaptive streaming
+- [webOS TV JS Library](https://webostv.developer.lge.com) by LG Electronics
 
-![webOS Dev Manager device setup](https://user-images.githubusercontent.com/830358/215522596-196d9629-3942-4533-bebb-5a81ba62ebc0.png)
+## 📄 License
 
-![webOS Dev Manager installed apps view](https://user-images.githubusercontent.com/830358/215522298-eadebc84-661b-40ad-b6a9-9379710f88dc.png)
-
-### 3. Alternative: install with LG's webOS CLI
-
-1. Install [Node.js](https://nodejs.org/) and LG's CLI:
-
-   ```sh
-   npm install -g @webos-tools/cli
-   ares -V
-   ```
-
-2. Run the device setup wizard and add a device named `tv`. Use the TV's current IP address, port `9922`, username `prisoner`, and no password:
-
-   ```sh
-   ares-setup-device
-   ares-setup-device --list
-   ```
-
-3. Ensure **Key Server** is enabled on the TV, then fetch the device key. Enter the six-character passphrase shown on the TV when prompted:
-
-   ```sh
-   ares-novacom --device tv --getkey
-   ```
-
-4. Install the package (replace the sample path with the actual IPK path):
-
-   ```sh
-   ares-install --device tv ./dist/JTV-webOS.ipk
-   ```
-
-5. Launch the app:
-
-   ```sh
-   ares-launch --device tv com.codex.jtvwebos
-   ```
-
-If your build generated the IPK under a different filename or directory, use that exact path. The app ID above matches this repository's build instructions.
-
-### Troubleshooting
-
-- **TV not reachable:** Confirm the TV and computer are on the same Wi-Fi/LAN, check the TV's current IP address, and avoid guest Wi-Fi with client isolation.
-- **Pairing fails:** Reopen Developer Mode, ensure **Key Server** is on, and retry with the current passphrase. Confirm the session has not expired.
-- **Installation fails:** Check that the package is a successfully built webOS `.ipk`, not an Android `.apk`.
-- **App disappears later:** Check Developer Mode session status and extend it before expiry. Disabling Developer Mode removes development-installed apps.
-- **App installs but will not launch:** Confirm the package build succeeded and use the app ID `com.codex.jtvwebos`. Collect logs before opening an issue. Never post the TV passphrase, private SSH keys, Jio OTPs, or session tokens.
-
-### Official references
-
-- [LG: Developer Mode app setup and testing](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app)
-- [LG: Install the webOS CLI](https://webostv.developer.lge.com/develop/tools/cli-installation)
-- [LG: CLI developer guide](https://webostv.developer.lge.com/develop/tools/cli-dev-guide)
-- [webOS Dev Manager downloads](https://github.com/webosbrew/dev-manager-desktop/releases/latest)
-
-## Notes
-
-Stream access and playback remain subject to the account's Jio entitlement, the current Jio service response, and the TV's media and DRM support. The app does not bypass subscription or DRM checks.
-
-`SHAKA-LICENSE.txt` applies to the bundled Shaka Player component.
+This project builds upon open-source components. See [SHAKA-LICENSE.txt](SHAKA-LICENSE.txt) for the Shaka Player license (Apache 2.0).

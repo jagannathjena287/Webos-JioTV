@@ -1,5 +1,7 @@
 # Packaged builds and local tooling
 *.ipk
+dist/
+sample.mp4
 *.zip
 node_modules/
 .webos/
