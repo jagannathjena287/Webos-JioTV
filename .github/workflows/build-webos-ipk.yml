@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - '**'
+    tags:
+      - 'v*'
     paths:
       - 'app.js'
       - 'index.html'
@@ -28,23 +30,22 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-ipk:
-    name: Package JTV webOS app
+    name: Package Vistaar webOS app
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
     steps:
-      - name: Check out commit under test
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
 
       - name: Check JavaScript syntax
         run: |
@@ -57,7 +58,7 @@ jobs:
       - name: Package app and service into IPK
         run: |
           mkdir -p dist
-          ares-package -o dist . service/com.codex.jtvwebos.service
+          ares-package -e "sample.mp4" -o dist . service/com.codex.jtvwebos.service
 
       - name: Verify generated IPK
         shell: bash
@@ -72,10 +73,17 @@ jobs:
           ares-package --info "${packages[0]}"
           echo "IPK_PATH=${packages[0]}" >> "$GITHUB_ENV"
 
-      - name: Upload installable IPK
+      - name: Upload IPK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: jtv-webos-yellow-epg-ipk
+          name: webos-jiotv-vistaar-ipk
           path: dist/*.ipk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.ipk
+          generate_release_notes: true
