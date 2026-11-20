@@ -45,6 +45,7 @@
     activeTab: 'home',
     selected: -1,
     previewChannel: null,
+    epgCache: {},
     tuneBuffer: '',
     tuneTimer: null,
     active: null,
@@ -211,20 +212,25 @@
       panel.classList.remove('active');
     });
 
-    const targetPanel = $(`view-${tabName === 'search' ? 'search' : tabName === 'guide' ? 'guide' : tabName === 'livetv' ? 'livetv' : 'home'}`);
+    const panelKey = (tabName === 'search' || tabName === 'guide')
+      ? tabName
+      : (tabName === 'livetv' || tabName === 'hdtv' || tabName === 'freetv' || tabName === 'favorites')
+        ? 'livetv'
+        : 'home';
+    const targetPanel = $(`view-${panelKey}`);
     if (targetPanel) targetPanel.classList.add('active');
 
     if (tabName === 'favorites') {
       state.group = 'favorites';
       state.language = 'all';
-    } else if (tabName === 'hdtv') {
-      state.group = 'all';
-      state.language = 'all';
-    } else if (tabName === 'freetv') {
-      state.group = 'all';
+    } else if (tabName === 'hdtv' || tabName === 'freetv' || tabName === 'livetv') {
+      if (state.group === 'favorites') state.group = 'all';
     }
 
     render();
+    if (tabName === 'guide' && state.previewChannel) {
+      populateGuideTimeline(state.previewChannel);
+    }
   }
 
   document.querySelectorAll('.nav-item').forEach((btn) => {
@@ -294,9 +300,23 @@
     const now = new Date();
     $('preview-start-time').textContent = formatTime(new Date(now.getTime() - 20 * 60000));
     $('preview-end-time').textContent = formatTime(new Date(now.getTime() + 40 * 60000));
+    if ($('preview-progress-fill')) $('preview-progress-fill').style.width = '35%';
 
     $('preview-watch-btn').onclick = () => play(channel);
     $('preview-schedule-btn').onclick = () => switchTab('guide');
+
+    loadChannelEpg(channel).then((programmes) => {
+      if (!state.previewChannel || state.previewChannel.id !== channel.id || !programmes.length) return;
+      const nowMs = Date.now();
+      const current = programmes.find((p) => p.startMs <= nowMs && p.endMs > nowMs) || programmes[0];
+      if (!current) return;
+      $('preview-show-title').textContent = current.title;
+      $('preview-start-time').textContent = formatTime(new Date(current.startMs));
+      $('preview-end-time').textContent = formatTime(new Date(current.endMs));
+      if ($('preview-desc') && current.description) $('preview-desc').textContent = current.description;
+      const pct = Math.max(5, Math.min(100, Math.round(((nowMs - current.startMs) / Math.max(1, current.endMs - current.startMs)) * 100)));
+      if ($('preview-progress-fill')) $('preview-progress-fill').style.width = `${pct}%`;
+    });
   }
 
   // ==================== CARD CREATION ====================
@@ -326,6 +346,8 @@
     logoBox.className = 'logo-box';
     if (channel.logo) {
       const img = document.createElement('img');
+      img.loading = 'lazy';
+      img.decoding = 'async';
       img.src = channel.logo;
       img.alt = '';
       img.onerror = () => { logoBox.textContent = channel.title.slice(0, 2).toUpperCase(); };
@@ -366,6 +388,8 @@
     logo.className = 'logo-box';
     if (channel.logo) {
       const img = document.createElement('img');
+      img.loading = 'lazy';
+      img.decoding = 'async';
       img.src = channel.logo;
       img.alt = '';
       img.onerror = () => { logo.textContent = channel.title.slice(0, 2).toUpperCase(); };
@@ -467,36 +491,104 @@
   }
 
   function renderLiveTvColumns(channels) {
+    const favorites = new Set(readStored(FAVORITES_KEY, []));
     const catList = $('livetv-cat-list');
     if (catList) {
       clearElement(catList);
 
-      const counts = new Map();
-      counts.set('all', { label: 'All Channels', count: state.channels.length });
-
+      const genreCounts = new Map();
       state.channels.forEach((c) => {
-        const lang = languageKey(c.language);
-        const cur = counts.get(lang) || { label: c.language, count: 0 };
-        cur.count++;
-        counts.set(lang, cur);
+        const g = (c.group || 'General').trim();
+        genreCounts.set(g, (genreCounts.get(g) || 0) + 1);
       });
 
-      counts.forEach((val, key) => {
+      const entries = [
+        { key: 'all', label: 'All Channels', count: state.channels.length },
+        { key: 'favorites', label: 'Favourites', count: state.channels.filter((c) => favorites.has(c.id)).length }
+      ];
+
+      Array.from(genreCounts.entries())
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .forEach(([groupName, count]) => {
+          entries.push({ key: groupName, label: groupName, count });
+        });
+
+      entries.forEach(({ key, label, count }) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `cat-btn${state.language === key ? ' active' : ''}`;
-        btn.innerHTML = `<span>${val.label}</span><span class="cat-count">${val.count}</span>`;
+        btn.className = `cat-btn${state.group === key ? ' active' : ''}`;
+        btn.innerHTML = `<span>${label}</span><span class="cat-count">${count}</span>`;
         btn.onclick = () => {
-          state.language = key;
+          state.group = key;
           render();
         };
         catList.append(btn);
       });
     }
 
+    const langBar = $('livetv-lang-bar');
+    if (langBar) {
+      clearElement(langBar);
+      const langCounts = new Map();
+      langCounts.set('all', { label: 'All Languages', count: state.channels.length });
+
+      state.channels.forEach((c) => {
+        const key = languageKey(c.language);
+        const cur = langCounts.get(key) || { label: c.language || 'Other', count: 0 };
+        cur.count++;
+        langCounts.set(key, cur);
+      });
+
+      langCounts.forEach((val, key) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `lang-pill${state.language === key ? ' active' : ''}`;
+        btn.textContent = val.label;
+        btn.onclick = () => {
+          state.language = key;
+          localStorage.setItem(LANGUAGE_KEY, JSON.stringify(key));
+          render();
+        };
+        langBar.append(btn);
+      });
+    }
+
+    const libTitle = $('library-title');
+    if (libTitle) {
+      libTitle.textContent = state.group === 'all'
+        ? 'All Live Channels'
+        : state.group === 'favorites'
+          ? 'Favourite Channels'
+          : state.group;
+    }
+
     if (elements.list) {
       clearElement(elements.list);
-      channels.forEach((c) => elements.list.append(createChannelCard(c)));
+      const PAGE_SIZE = 80;
+      let rendered = 0;
+
+      function appendBatch() {
+        const slice = channels.slice(rendered, rendered + PAGE_SIZE);
+        slice.forEach((c) => elements.list.append(createChannelCard(c)));
+        rendered += slice.length;
+        const oldMore = $('load-more-channels');
+        if (oldMore) oldMore.remove();
+        if (rendered < channels.length) {
+          const moreBtn = document.createElement('button');
+          moreBtn.id = 'load-more-channels';
+          moreBtn.type = 'button';
+          moreBtn.className = 'pill-btn secondary-btn load-more-btn';
+          moreBtn.textContent = `Show More (${channels.length - rendered} remaining)`;
+          moreBtn.onclick = () => {
+            appendBatch();
+            const firstNew = elements.list.children[rendered - slice.length];
+            if (firstNew) firstNew.focus();
+          };
+          elements.list.append(moreBtn);
+        }
+      }
+
+      appendBatch();
       elements.list.hidden = channels.length === 0;
     }
 
@@ -519,42 +611,102 @@
     channels.slice(0, 12).forEach((c) => elements.searchResultsList.append(createChannelCard(c)));
   }
 
-  function renderGuideList() {
-    const picker = $('guide-channel-picker');
-    if (!picker || picker.children.length > 0) return;
-    clearElement(picker);
-    state.channels.slice(0, 20).forEach((c) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'cat-btn';
-      btn.innerHTML = `<span>${c.title}</span><span class="cat-count">ID ${c.id}</span>`;
-      btn.onclick = () => populateGuideTimeline(c);
-      picker.append(btn);
-    });
-    if (state.channels[0]) populateGuideTimeline(state.channels[0]);
+  function parseEpochMs(val) {
+    if (val == null) return 0;
+    const num = Number(val);
+    if (isFinite(num) && num > 0) return num < 1e12 ? num * 1000 : num;
+    const parsed = Date.parse(String(val));
+    return isFinite(parsed) ? parsed : 0;
   }
 
-  function populateGuideTimeline(channel) {
-    $('guide-active-ch-name').textContent = channel.title;
-    $('guide-active-show-name').textContent = `${channel.title} Today's Schedule`;
+  async function loadChannelEpg(channel) {
+    if (!channel) return [];
+    const cached = state.epgCache[channel.id];
+    if (cached && Date.now() - cached.fetchedAt < 300000) return cached.programmes;
+
+    let programmes = [];
+    if (isWebOSTV()) {
+      try {
+        const res = await serviceCall('epg/get', { channelId: channel.id, offset: 0 });
+        programmes = (res && res.programmes ? res.programmes : []).map((p) => ({
+          startMs: parseEpochMs(p.startEpoch),
+          endMs: parseEpochMs(p.endEpoch),
+          title: p.title || `${channel.title} Live`,
+          description: p.description || p.category || `Live broadcast on ${channel.title}.`
+        })).filter((p) => p.startMs > 0 && p.endMs > p.startMs);
+      } catch (_) {
+        programmes = [];
+      }
+    }
+
+    if (!programmes.length) {
+      const base = new Date();
+      base.setMinutes(0, 0, 0);
+      const labels = ['Live Broadcast', 'Featured Programme', 'Prime Showcase', 'Special Presentation', 'Late Edition'];
+      programmes = labels.map((label, idx) => ({
+        startMs: base.getTime() + (idx - 1) * 3600000,
+        endMs: base.getTime() + idx * 3600000,
+        title: `${channel.title} — ${label}`,
+        description: `${channel.group} · ${channel.language} broadcast on ${channel.title}.`
+      }));
+    }
+
+    state.epgCache[channel.id] = { fetchedAt: Date.now(), programmes };
+    return programmes;
+  }
+
+  function renderGuideList() {
+    const picker = $('guide-channel-picker');
+    if (!picker) return;
+    const targetCount = String(state.channels.length);
+    if (picker.dataset.count === targetCount && picker.children.length > 0) return;
+
+    clearElement(picker);
+    picker.dataset.count = targetCount;
+
+    const preferred = state.active || state.previewChannel || state.channels[0];
+    state.channels.slice(0, 120).forEach((c) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `cat-btn${preferred && preferred.id === c.id ? ' active' : ''}`;
+      btn.innerHTML = `<span>${c.title}</span><span class="cat-count">ID ${c.id}</span>`;
+      btn.onclick = () => {
+        picker.querySelectorAll('.cat-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        populateGuideTimeline(c);
+      };
+      picker.append(btn);
+    });
+    if (preferred) populateGuideTimeline(preferred);
+  }
+
+  async function populateGuideTimeline(channel) {
+    if (!channel) return;
+    $('guide-active-ch-name').textContent = `${channel.title} · ID ${channel.id}`;
+    $('guide-active-show-name').textContent = 'Loading schedule…';
     const timeline = $('guide-schedule-timeline');
     clearElement(timeline);
 
-    const now = new Date();
-    const hours = [ -2, 0, 1.5, 3, 5 ];
-    const showNames = [ 'Morning News & Updates', 'Prime Live Telecast', 'Special Feature Presentation', 'Evening Bulletin', 'Blockbuster Movie' ];
+    const programmes = await loadChannelEpg(channel);
+    if (!timeline) return;
+    clearElement(timeline);
 
-    hours.forEach((hOffset, i) => {
-      const start = new Date(now.getTime() + hOffset * 3600000);
-      const end = new Date(start.getTime() + 90 * 60000);
-      const slot = document.createElement('div');
-      slot.className = 'timeline-slot';
-      slot.tabIndex = 0;
+    const nowMs = Date.now();
+    const relevant = programmes.filter((p) => p.endMs >= nowMs - 3600000);
+    const list = (relevant.length ? relevant : programmes).slice(0, 12);
+    const current = list.find((p) => p.startMs <= nowMs && p.endMs > nowMs) || list[0];
+    $('guide-active-show-name').textContent = current ? current.title : `${channel.title} Live`;
+
+    list.forEach((prog) => {
+      const isNow = prog.startMs <= nowMs && prog.endMs > nowMs;
+      const slot = document.createElement('button');
+      slot.type = 'button';
+      slot.className = `timeline-slot${isNow ? ' current' : ''}`;
       slot.innerHTML = `
-        <div class="slot-time">${formatTime(start)} - ${formatTime(end)}</div>
+        <div class="slot-time">${isNow ? 'LIVE NOW · ' : ''}${formatTime(new Date(prog.startMs))} - ${formatTime(new Date(prog.endMs))}</div>
         <div class="slot-info">
-          <strong>${showNames[i] || 'Featured Show'}</strong>
-          <p>Live broadcast with commentary and high-definition audio on ${channel.title}.</p>
+          <strong>${prog.title}</strong>
+          <p>${prog.description}</p>
         </div>
       `;
       slot.onclick = () => play(channel);
@@ -616,6 +768,7 @@
     // Explicitly hide any overlays
     clearTuneBuffer();
     if (elements.programGuide) elements.programGuide.classList.remove('visible');
+    if ($('player-channel-drawer')) $('player-channel-drawer').classList.remove('visible');
     if (elements.tuneDisplay) elements.tuneDisplay.classList.remove('visible');
     if (elements.playerPrompt) elements.playerPrompt.hidden = true;
     if (elements.playerError) elements.playerError.hidden = true;
@@ -667,6 +820,7 @@
     elements.playerView.classList.remove('open');
     elements.controls.hidden = true;
     if (elements.programGuide) elements.programGuide.classList.remove('visible');
+    if ($('player-channel-drawer')) $('player-channel-drawer').classList.remove('visible');
   }
 
   function startProxy() {
@@ -821,8 +975,23 @@
     if (key === 'Escape' || code === 461) {
       e.preventDefault();
       if (elements.dialog.open) { elements.dialog.close(); return; }
+      const drawer = $('player-channel-drawer');
+      if (drawer && drawer.classList.contains('visible')) {
+        drawer.classList.remove('visible');
+        revealPlayerControls(true);
+        return;
+      }
+      if (elements.programGuide && elements.programGuide.classList.contains('visible')) {
+        elements.programGuide.classList.remove('visible');
+        return;
+      }
       if (state.active) { stopPlayback(); return; }
       if (state.activeTab !== 'home') { switchTab('home'); return; }
+    }
+
+    if (code === 405 && state.active) {
+      e.preventDefault();
+      togglePlayerGuide();
     }
   });
 
@@ -864,18 +1033,143 @@
     setConnection(isWebOSTV() ? 'Sign in to watch' : 'Browser Mode', false);
     updateAccountUI();
   });
+  async function togglePlayerGuide() {
+    if (!elements.programGuide) return;
+    const willShow = !elements.programGuide.classList.contains('visible');
+    elements.programGuide.classList.toggle('visible', willShow);
+    if (!willShow || !state.active) return;
+
+    const ch = state.active;
+    elements.guideChannel.textContent = `${ch.title} · ID ${ch.id}`;
+    elements.guideCurrentTitle.textContent = 'Loading programme…';
+    elements.guideCurrentTime.textContent = '';
+    elements.guideCurrentDescription.textContent = '';
+    if (elements.guideProgress) elements.guideProgress.style.width = '0%';
+    clearElement(elements.guideProgramList);
+
+    const programmes = await loadChannelEpg(ch);
+    if (!elements.programGuide.classList.contains('visible') || !state.active || state.active.id !== ch.id) return;
+
+    const nowMs = Date.now();
+    const current = programmes.find((p) => p.startMs <= nowMs && p.endMs > nowMs) || programmes[0];
+    if (current) {
+      elements.guideCurrentTitle.textContent = current.title;
+      elements.guideCurrentTime.textContent = `${formatTime(new Date(current.startMs))} – ${formatTime(new Date(current.endMs))}`;
+      elements.guideCurrentDescription.textContent = current.description;
+      const pct = Math.max(5, Math.min(100, Math.round(((nowMs - current.startMs) / Math.max(1, current.endMs - current.startMs)) * 100)));
+      if (elements.guideProgress) elements.guideProgress.style.width = `${pct}%`;
+    }
+
+    const upcoming = programmes.filter((p) => p.startMs > nowMs).slice(0, 6);
+    upcoming.forEach((p) => {
+      const item = document.createElement('div');
+      item.className = 'guide-upcoming-card';
+      item.innerHTML = `<strong>${p.title}</strong><span>${formatTime(new Date(p.startMs))} – ${formatTime(new Date(p.endMs))}</span>`;
+      elements.guideProgramList.append(item);
+    });
+  }
+
+  async function updateSwitcherGuide(channel) {
+    if (!channel) return;
+    const chName = $('switcher-ch-name');
+    const chId = $('switcher-ch-id');
+    const epgNow = $('switcher-epg-now');
+    const epgNext = $('switcher-epg-next');
+    if (chName) chName.textContent = channel.title;
+    if (chId) chId.textContent = `ID ${channel.id}`;
+    if (epgNow) epgNow.textContent = 'Loading programme guide…';
+    if (epgNext) epgNext.textContent = '';
+
+    const programmes = await loadChannelEpg(channel);
+    if (!chName || chName.textContent !== channel.title) return;
+    const nowMs = Date.now();
+    const current = programmes.find((p) => p.startMs <= nowMs && p.endMs > nowMs) || programmes[0];
+    const next = programmes.find((p) => p.startMs > nowMs);
+    if (epgNow) {
+      epgNow.textContent = current
+        ? `Now: ${current.title} (${formatTime(new Date(current.startMs))} – ${formatTime(new Date(current.endMs))})`
+        : `${channel.title} Live`;
+    }
+    if (epgNext) {
+      epgNext.textContent = next
+        ? `Up Next: ${next.title} (${formatTime(new Date(next.startMs))})`
+        : `${channel.group} · ${channel.language}`;
+    }
+  }
+
+  function toggleChannelDrawer() {
+    const drawer = $('player-channel-drawer');
+    const list = $('switcher-channel-list');
+    if (!drawer || !list) return;
+
+    if (elements.programGuide) elements.programGuide.classList.remove('visible');
+    const willShow = !drawer.classList.contains('visible');
+    drawer.classList.toggle('visible', willShow);
+    if (!willShow) {
+      revealPlayerControls(true);
+      return;
+    }
+
+    if (state.controlsHideTimer) clearTimeout(state.controlsHideTimer);
+    clearElement(list);
+
+    let activeCard = null;
+    const activeIdx = state.active ? state.channels.findIndex((c) => c.id === state.active.id) : 0;
+    const startIdx = Math.max(0, activeIdx - 30);
+    const windowChannels = state.channels.slice(startIdx, startIdx + 80);
+
+    windowChannels.forEach((ch) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const isPlaying = state.active && state.active.id === ch.id;
+      btn.className = `switcher-card${isPlaying ? ' playing' : ''}`;
+      btn.dataset.channelId = ch.id;
+
+      const logo = document.createElement('div');
+      logo.className = 'logo-box sm';
+      if (ch.logo) {
+        const img = document.createElement('img');
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.src = ch.logo;
+        img.alt = '';
+        img.onerror = () => { logo.textContent = ch.title.slice(0, 2).toUpperCase(); };
+        logo.append(img);
+      } else {
+        logo.textContent = ch.title.slice(0, 2).toUpperCase();
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'switcher-card-meta';
+      const t = document.createElement('strong');
+      t.textContent = ch.title;
+      const s = document.createElement('span');
+      s.textContent = isPlaying ? 'PLAYING NOW' : `${ch.group} · ${ch.id}`;
+      meta.append(t, s);
+
+      btn.append(logo, meta);
+      btn.addEventListener('focus', () => updateSwitcherGuide(ch));
+      btn.addEventListener('click', () => play(ch));
+      list.append(btn);
+      if (isPlaying) activeCard = btn;
+    });
+
+    const target = activeCard || list.firstElementChild;
+    if (target) {
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'auto' });
+      updateSwitcherGuide(state.active || state.channels[0]);
+    }
+  }
+
   $('back-library').addEventListener('click', stopPlayback);
+  const osdChannels = $('osd-channels-btn');
+  if (osdChannels) {
+    osdChannels.addEventListener('click', toggleChannelDrawer);
+  }
   const osdGuide = $('osd-guide-btn');
   if (osdGuide) {
-    osdGuide.addEventListener('click', () => {
-      if (elements.programGuide) {
-        elements.programGuide.classList.toggle('visible');
-        if (elements.programGuide.classList.contains('visible') && state.active) {
-          $('guide-channel').textContent = state.active.title;
-          $('guide-current-title').textContent = `${state.active.title} Live Stream`;
-        }
-      }
-    });
+    osdGuide.addEventListener('click', togglePlayerGuide);
   }
   $('play-toggle').addEventListener('click', () => {
     if (elements.player.paused) elements.player.play().catch(() => {});

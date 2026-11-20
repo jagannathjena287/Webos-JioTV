@@ -1,10 +1,10 @@
 {
   "name": "jiotv-lg-webos",
-  "version": "0.3.18",
+  "version": "0.3.19",
   "description": "JioTV Live TV application for LG webOS Smart TVs",
   "scripts": {
     "build": "ares-package -e \"sample.mp4\" . service/com.codex.jtvwebos.service --outdir dist",
-    "install:tv": "ares-install --device tv ./dist/com.codex.jtvwebos_0.3.18_all.ipk",
+    "install:tv": "ares-install --device tv ./dist/com.codex.jtvwebos_0.3.19_all.ipk",
     "launch:tv": "ares-launch --device tv com.codex.jtvwebos"
   },
   "author": "",

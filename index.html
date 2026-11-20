@@ -18,13 +18,9 @@
     <!-- Vistaar Header -->
     <header class="vistaar-header">
       <div class="brand">
-        <!-- Vistaar "Blade V" Monogram -->
-        <svg class="blade-v" viewBox="0 0 64 64" aria-hidden="true">
-          <path class="blade-white" d="M6 11 L19 11 L38 53 L26 53 Z" fill="#F5F6F8" stroke="#F5F6F8" stroke-width="2" stroke-linejoin="round" />
-          <path class="blade-cyan" d="M45 11 L58 11 L40.6 47.6 L34.4 33.9 Z" fill="#5AA9FF" stroke="#5AA9FF" stroke-width="2" stroke-linejoin="round" />
-        </svg>
+        <span class="jio-brand-circle" aria-hidden="true">Jio</span>
         <div class="brand-text-wrap">
-          <span class="brand-title">Vistaar</span>
+          <span class="brand-title">MyJio</span>
         </div>
       </div>
 
@@ -38,10 +34,7 @@
         </button>
         <button class="nav-item active" data-tab="home" type="button">Home</button>
         <button class="nav-item" data-tab="livetv" type="button">Live TV</button>
-        <button class="nav-item" data-tab="freetv" type="button">Free TV</button>
-        <button class="nav-item" data-tab="hdtv" type="button">HD</button>
         <button class="nav-item" data-tab="guide" type="button">Guide</button>
-        <button class="nav-item" data-tab="favorites" type="button">Favourites</button>
       </nav>
 
       <!-- Right Header Actions -->
@@ -153,9 +146,9 @@
       <!-- ================= 2. LIVE TV VIEW (3-Column Layout) ================= -->
       <section id="view-livetv" class="view-panel" aria-label="Live TV">
         <div class="livetv-columns">
-          <!-- Column 1: Categories / Languages -->
-          <aside class="col-categories" aria-label="Languages and Categories">
-            <div class="col-header-caption">CATEGORIES</div>
+          <!-- Column 1: Genres -->
+          <aside class="col-categories" aria-label="Genres">
+            <div class="col-header-caption">GENRES</div>
             <div id="livetv-cat-list" class="cat-pill-list" role="tablist"></div>
           </aside>
 
@@ -171,6 +164,8 @@
               </div>
               <div id="groups" class="hidden-compat" hidden></div>
             </div>
+
+            <div id="livetv-lang-bar" class="lang-filter-bar" role="tablist" aria-label="Filter by language"></div>
 
             <div id="channel-list" class="channel-grid" role="list"></div>
 
@@ -347,7 +342,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
-          <span>Channels</span>
+          <span>Exit</span>
         </button>
 
         <div class="now-playing">
@@ -362,12 +357,32 @@
         </div>
 
         <div class="osd-actions">
+          <button id="osd-channels-btn" type="button" class="osd-btn">
+            <span>Channels</span>
+          </button>
           <button id="osd-guide-btn" type="button" class="osd-btn">
             <span>Guide</span>
           </button>
           <button id="play-toggle" type="button" class="play-btn" aria-label="Play or pause">❚❚</button>
         </div>
       </div>
+
+      <!-- In-Player Live Channel Switcher + Selected Channel Guide -->
+      <section id="player-channel-drawer" class="player-channel-drawer" aria-label="Switch channel">
+        <div class="switcher-guide-bar">
+          <div class="switcher-guide-left">
+            <span class="guide-eyebrow">SELECTED CHANNEL GUIDE</span>
+            <div class="switcher-ch-row">
+              <strong id="switcher-ch-name">Channel</strong>
+              <span id="switcher-ch-id" class="count-badge">ID 000</span>
+            </div>
+            <p id="switcher-epg-now" class="switcher-epg-now">Loading current programme…</p>
+            <p id="switcher-epg-next" class="switcher-epg-next"></p>
+          </div>
+          <span class="guide-hint">◀ ▶ Browse · OK Watch · Back Close</span>
+        </div>
+        <div id="switcher-channel-list" class="switcher-channel-list" role="list"></div>
+      </section>
     </section>
 
     <!-- Program Guide Drawer Overlay (Yellow Key) -->
@@ -403,12 +418,9 @@
       <form id="settings-form" method="dialog">
         <div class="dialog-header">
           <div class="dialog-brand">
-            <svg class="blade-v sm" viewBox="0 0 64 64" aria-hidden="true">
-              <path class="blade-white" d="M6 11 L19 11 L38 53 L26 53 Z" fill="#F5F6F8" stroke="#F5F6F8" stroke-width="2" />
-              <path class="blade-cyan" d="M45 11 L58 11 L40.6 47.6 L34.4 33.9 Z" fill="#5AA9FF" stroke="#5AA9FF" stroke-width="2" />
-            </svg>
+            <span class="jio-brand-circle sm" aria-hidden="true">Jio</span>
             <div>
-              <h2 id="settings-heading">JioTV Account</h2>
+              <h2 id="settings-heading">MyJio Account</h2>
               <p>Sign in with your Jio mobile number to access all entitled channels</p>
             </div>
           </div>
@@ -478,5 +490,6 @@
   <script src="webOSTVjs-1.2.13/webOSTV.js"></script>
   <script src="shaka-player.compiled.js"></script>
   <script src="app.js"></script>
+  <script src="remote-controls.js"></script>
 </body>
 </html>

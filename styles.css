@@ -1659,3 +1659,609 @@ button {
 .hidden-compat {
   display: none !important;
 }
+
+/* ================= PRODUCTION LIVE TV POLISH & LANGUAGE FILTER BAR ================= */
+.lang-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 16px;
+  flex-shrink: 0;
+}
+
+.lang-filter-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.lang-filter-bar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+}
+
+.lang-pill {
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  transition: transform 0.14s ease, background 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.lang-pill.active {
+  background: var(--accent, #5aa9ff);
+  border-color: transparent;
+  color: #090c12;
+  font-weight: 700;
+}
+
+.lang-pill:focus,
+.lang-pill:hover {
+  outline: none;
+  background: #ffffff !important;
+  color: #090c12 !important;
+  box-shadow: 0 0 0 3px rgba(90, 169, 255, 0.65);
+  transform: scale(1.04);
+}
+
+.channel-card {
+  backdrop-filter: blur(8px);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.channel-card:focus,
+.channel-card:hover {
+  outline: none;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 3px #ffffff, 0 14px 32px rgba(0, 0, 0, 0.55) !important;
+  transform: scale(1.025);
+  z-index: 3;
+}
+
+.timeline-slot.current {
+  border-color: rgba(90, 169, 255, 0.7);
+  background: rgba(90, 169, 255, 0.12);
+}
+
+.timeline-slot:focus,
+.timeline-slot:hover {
+  outline: none;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px #ffffff;
+  transform: translateX(4px);
+}
+
+.guide-upcoming-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.guide-upcoming-card strong {
+  font-size: 14px;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guide-upcoming-card span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ================= IN-PLAYER LIVE CHANNEL SWITCHER & GUIDE ================= */
+.player-channel-drawer {
+  position: fixed;
+  left: 36px;
+  right: 36px;
+  bottom: 28px;
+  z-index: 48;
+  padding: 22px 26px;
+  border-radius: 22px;
+  background: rgba(10, 13, 20, 0.93);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(22px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.82);
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.player-channel-drawer.visible {
+  display: flex;
+}
+
+.switcher-guide-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.switcher-guide-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.switcher-ch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#switcher-ch-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.switcher-epg-now {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5aa9ff;
+}
+
+.switcher-epg-next {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.switcher-channel-list {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 6px 4px 8px;
+}
+
+.switcher-channel-list::-webkit-scrollbar {
+  height: 6px;
+}
+
+.switcher-channel-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+}
+
+.switcher-card {
+  flex: 0 0 240px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+
+.switcher-card.playing {
+  border-color: rgba(90, 169, 255, 0.7);
+  background: rgba(90, 169, 255, 0.14);
+}
+
+.switcher-card:focus,
+.switcher-card:hover {
+  outline: none;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px #ffffff;
+  transform: scale(1.03);
+}
+
+.logo-box.sm {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.switcher-card-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.switcher-card-meta strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.switcher-card-meta span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ================= LOW-RAM WEBOS PERFORMANCE + 10-FOOT TV SCALING ================= */
+.glow-orb {
+  display: none !important;
+}
+
+*,
+*::before,
+*::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.vistaar-header {
+  height: 96px !important;
+  padding: 0 42px !important;
+  background: rgba(12, 15, 22, 0.96) !important;
+}
+
+.brand-title {
+  font-size: 26px !important;
+}
+
+.nav-pill {
+  background: #141926 !important;
+  padding: 6px !important;
+}
+
+.nav-item {
+  font-size: 18px !important;
+  padding: 12px 22px !important;
+}
+
+.status-indicator,
+.header-clock {
+  font-size: 16px !important;
+}
+
+.livetv-columns {
+  grid-template-columns: 320px 1fr 420px !important;
+  gap: 28px !important;
+}
+
+.col-header-caption {
+  font-size: 14px !important;
+  letter-spacing: 0.14em !important;
+}
+
+.cat-btn {
+  font-size: 18px !important;
+  padding: 15px 20px !important;
+  border-radius: 14px !important;
+  transition: transform 0.08s ease !important;
+}
+
+.cat-btn .cat-count {
+  font-size: 15px !important;
+}
+
+.channels-heading {
+  font-size: 30px !important;
+}
+
+.count-badge {
+  font-size: 15px !important;
+  padding: 6px 14px !important;
+}
+
+.lang-pill {
+  height: 44px !important;
+  padding: 0 20px !important;
+  font-size: 16px !important;
+  transition: transform 0.08s ease !important;
+}
+
+.channel-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+}
+
+.channel-card {
+  min-height: 112px !important;
+  padding: 16px 20px !important;
+  border-radius: 18px !important;
+  background: #141926 !important;
+  transition: transform 0.08s ease !important;
+}
+
+.channel-card .logo-box {
+  width: 72px !important;
+  height: 72px !important;
+  border-radius: 14px !important;
+}
+
+.channel-copy strong {
+  font-size: 19px !important;
+}
+
+.channel-copy small {
+  font-size: 15px !important;
+}
+
+.channel-id {
+  font-size: 14px !important;
+  padding: 4px 10px !important;
+}
+
+.preview-card {
+  background: #141926 !important;
+}
+
+.preview-ch-name {
+  font-size: 22px !important;
+}
+
+.preview-title {
+  font-size: 24px !important;
+}
+
+.preview-meta,
+.preview-desc {
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+}
+
+.pill-btn {
+  height: 50px !important;
+  padding: 0 24px !important;
+  font-size: 17px !important;
+  transition: transform 0.08s ease !important;
+}
+
+.load-more-btn {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin: 10px 0 24px;
+}
+
+.live-card {
+  transition: transform 0.08s ease !important;
+}
+
+.live-card .card-title {
+  font-size: 18px !important;
+}
+
+.live-card .card-sub {
+  font-size: 14px !important;
+}
+
+.program-guide,
+.player-channel-drawer {
+  background: rgba(12, 16, 24, 0.97) !important;
+}
+
+.switcher-card {
+  flex: 0 0 280px !important;
+  padding: 14px 16px !important;
+  transition: transform 0.08s ease !important;
+}
+
+.switcher-card-meta strong {
+  font-size: 17px !important;
+}
+
+.switcher-card-meta span {
+  font-size: 13px !important;
+}
+
+/* ================= MYJIO BRANDING, SEARCH ICON, HOME CARDS & FOCUS CROP FIX ================= */
+.jio-brand-circle {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #e50914;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.jio-brand-circle.sm {
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+}
+
+.nav-item.icon-item {
+  width: 50px !important;
+  height: 50px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+.nav-item.icon-item .nav-icon {
+  width: 22px !important;
+  height: 22px !important;
+  display: block !important;
+  color: #ffffff !important;
+}
+
+.nav-item.icon-item:focus .nav-icon,
+.nav-item.icon-item:hover .nav-icon {
+  color: #090c12 !important;
+}
+
+/* Remove big preview hero on Home tab */
+#home-hero {
+  display: none !important;
+}
+
+.home-rows-container {
+  padding-top: 8px !important;
+}
+
+/* Home channel boxes: channel icon fills the box */
+.live-card {
+  width: 260px !important;
+  min-width: 260px !important;
+  height: 200px !important;
+  padding: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  background: #141926 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 18px !important;
+  position: relative !important;
+}
+
+.live-card .card-art {
+  display: none !important;
+}
+
+.live-card .card-top {
+  position: absolute !important;
+  top: 18px !important;
+  left: 18px !important;
+  right: 18px !important;
+  z-index: 2 !important;
+}
+
+.live-card .card-bottom {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.live-card .logo-box {
+  width: 100% !important;
+  height: 118px !important;
+  border-radius: 12px !important;
+  background: #f5f7fb !important;
+  padding: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.live-card .logo-box img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.live-card .card-info {
+  width: 100% !important;
+  text-align: left !important;
+}
+
+/* Fix Live TV left-side focus ring cropping */
+.col-channels {
+  padding-left: 10px !important;
+  padding-right: 12px !important;
+}
+
+.channel-grid {
+  padding: 10px 14px 28px 14px !important;
+}
+
+/* ================= DARK LOGO BOXES + LARGER TV FONTS ================= */
+.brand-title {
+  font-size: 28px !important;
+}
+
+.nav-item {
+  font-size: 20px !important;
+  padding: 12px 24px !important;
+}
+
+.row-title {
+  font-size: 26px !important;
+}
+
+.live-card {
+  height: 212px !important;
+}
+
+.live-card .logo-box,
+.channel-card .logo-box,
+.switcher-card .logo-box {
+  background: #1d2436 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 8px !important;
+}
+
+.live-card .logo-box {
+  height: 122px !important;
+}
+
+.live-card .card-title {
+  font-size: 20px !important;
+}
+
+.live-card .card-sub {
+  font-size: 15px !important;
+}
+
+.cat-btn {
+  font-size: 20px !important;
+}
+
+.cat-btn .cat-count {
+  font-size: 16px !important;
+}
+
+.channels-heading {
+  font-size: 32px !important;
+}
+
+.lang-pill {
+  font-size: 17px !important;
+  height: 46px !important;
+}
+
+.channel-copy strong {
+  font-size: 21px !important;
+}
+
+.channel-copy small {
+  font-size: 16px !important;
+}
+
+.channel-id {
+  font-size: 15px !important;
+}
+
+.preview-ch-name {
+  font-size: 24px !important;
+}
+
+.preview-title {
+  font-size: 26px !important;
+}
+
+.preview-meta,
+.preview-desc {
+  font-size: 17px !important;
+}
